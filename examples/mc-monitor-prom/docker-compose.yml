@@ -74,6 +74,5 @@ services:
 
 
 volumes:
-  /srv/dev-disk-by-uuid-bbdb2845-d027-4a11-8702-f19ee87a2ee6/Minecraft: {}
   prometheus-tsdb: {}
   grafana-lib: {}

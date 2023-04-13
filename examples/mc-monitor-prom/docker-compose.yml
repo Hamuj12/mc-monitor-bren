@@ -4,12 +4,21 @@ services:
   mc:
     image: itzg/minecraft-server
     environment:
-      EULA: "true"
-      MEMORY: 2G
+      EULA: "TRUE"
+      TYPE: "AUTO_CURSEFORGE"
+      CF_SLUG: "better-mc-fabric"
+      CF_API_KEY: "$$2a$$10$$1QNdAwK/65XuVdfGhrCAZ.ehSv5GPZccStJE9ep/5Xoikfn2maolK"
+      MEMORY: 8G
+      MOTD: "Welcome to the server!"
+      SERVER_NAME: "BREN2"
+      DISABLE_HEALTHCHECK: "true"
+      UID: 998
+      GID: 100
     ports:
       - "25565:25565"
     volumes:
-      - mc-data:/data
+      - /srv/dev-disk-by-uuid-bbdb2845-d027-4a11-8702-f19ee87a2ee6/Minecraft:/data
+
   monitor:
     image: itzg/mc-monitor
     command: export-for-prometheus
@@ -18,6 +27,22 @@ services:
       DEBUG: "true"
     depends_on:
       - mc
+
+  backups:
+    image: itzg/mc-backup
+    environment:
+      BACKUP_INTERVAL: "1.5d"
+      # Alternatively, comment this out and uncomment network_mode below
+      # RCON_HOST: mc
+    volumes:
+      # mount the same volume used by server, but read-only
+      - /srv/dev-disk-by-uuid-bbdb2845-d027-4a11-8702-f19ee87a2ee6/Minecraft:/data:ro
+      # use a host attached directory so that it in turn can be backed up
+      # to external/cloud storage
+      - /srv/dev-disk-by-uuid-bbdb2845-d027-4a11-8702-f19ee87a2ee6/Backups:/backups
+    # share network namespace with server to simplify rcon access
+    network_mode: "service:mc"
+
   cadvisor:
     image: gcr.io/cadvisor/cadvisor
     ports:
@@ -27,6 +52,7 @@ services:
       - /var/run:/var/run:rw
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
+
   prometheus:
     image: prom/prometheus
     volumes:
@@ -34,6 +60,7 @@ services:
       - prometheus-tsdb:/prometheus
     depends_on:
       - monitor
+
   grafana:
     image: grafana/grafana-oss:${GRAFANA_VERSION:-8.3.3}
     ports:
